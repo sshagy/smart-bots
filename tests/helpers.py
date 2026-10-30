@@ -2,13 +2,32 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable, Iterable
 from dataclasses import replace
 from datetime import UTC, datetime
 
-from src.domain.entities import ChatType, IncomingMessage, MessengerType, ModerationEvent, User
+from src.domain.entities import (
+    ChatType,
+    IncomingMessage,
+    Meme,
+    MessengerType,
+    ModerationEvent,
+    User,
+)
+from src.domain.gateways import IClaudeUsageGateway, IMemeGateway
 from src.domain.repositories import IModerationRepository
+from src.domain.services import ModerationService
+from src.use_cases.handle_check import CheckUsageUseCase
+from src.use_cases.handle_help import HelpUseCase
+from src.use_cases.handle_mem import GetMemeUseCase
+from src.use_cases.moderate_message import ModerateMessageUseCase
+from src.use_cases.router import MessageRouter
 
 FIXED_NOW = datetime(2026, 10, 30, 12, 0, 0, tzinfo=UTC)
+FIXED_NOW_TS = int(FIXED_NOW.timestamp())
+MEME = Meme(title="Clean code", image_url="https://i.redd.it/abc.jpg")
+WARNING_TEMPLATE = "{user}, пожалуйста, не материтесь в чате, иначе будет бан."
 
 
 def make_message(
@@ -59,3 +78,41 @@ class InMemoryModerationRepository(IModerationRepository):
             and (chat_id is None or e.chat_id == chat_id)
         ]
         return events[:limit]
+
+
+class StaticMemeGateway(IMemeGateway):
+    def __init__(self, meme: Meme = MEME) -> None:
+        self.meme = meme
+
+    async def get_random_meme(self) -> Meme:
+        return self.meme
+
+
+def make_router(
+    *,
+    repository: IModerationRepository | None = None,
+    usage_gateway: IClaudeUsageGateway | None = None,
+    meme_gateway: IMemeGateway | None = None,
+    keywords: Iterable[str] = ("бля*",),
+) -> MessageRouter:
+    """Настоящее ядро с фейковыми хранилищем и внешними сервисами — для тестов адаптеров."""
+    return MessageRouter(
+        moderate=ModerateMessageUseCase(
+            ModerationService(keywords),
+            repository or InMemoryModerationRepository(),
+            WARNING_TEMPLATE,
+        ),
+        help_=HelpUseCase(),
+        check=CheckUsageUseCase(usage_gateway),
+        meme=GetMemeUseCase(meme_gateway or StaticMemeGateway()),
+    )
+
+
+async def wait_until(condition: Callable[[], bool], within: float = 2.0) -> None:
+    """Ждёт фоновую обработку (вебхуки отвечают 200 раньше, чем бот ответит в чат)."""
+    try:
+        async with asyncio.timeout(within):
+            while not condition():
+                await asyncio.sleep(0.01)
+    except TimeoutError:
+        raise AssertionError(f"условие не выполнилось за {within} с") from None
