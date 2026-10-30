@@ -38,6 +38,26 @@ async def test_values_come_from_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.moderation_keywords == ["бля*", "сука", "!страху*"]
 
 
+async def test_empty_values_in_env_file_mean_not_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Ровно так выглядит .env, скопированный из .env.example без заполнения секретов.
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "WEBHOOK_SECRET=\nANTHROPIC_API_KEY=\nMODERATION_KEYWORDS=\nWEBHOOK_PORT=9000\n",
+        encoding="utf-8",
+    )
+    for name in ("WEBHOOK_SECRET", "ANTHROPIC_API_KEY", "MODERATION_KEYWORDS", "WEBHOOK_PORT"):
+        monkeypatch.delenv(name, raising=False)
+
+    settings = Settings(_env_file=env_file)  # type: ignore[call-arg]
+
+    assert settings.webhook_secret is None
+    assert settings.anthropic_api_key is None
+    assert settings.moderation_keywords == []
+    assert settings.webhook_port == 9000
+
+
 async def test_invalid_bot_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BOT_MODE", "push")
 

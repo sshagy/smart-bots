@@ -64,7 +64,11 @@ def webhook_handler(
             return web.Response(status=400, text="Bad Request")
         # Ответ 200 — сразу: обработка идёт в фоне, иначе Meta сочтёт доставку неудачной
         # и пришлёт событие повторно.
-        consume(payload)
+        try:
+            consume(payload)
+        except Exception:
+            # Ошибка разбора не исправится от повторной доставки — не провоцируем ретраи Meta.
+            logger.exception("Не удалось разобрать вебхук WhatsApp")
         return web.Response(text="ok")
 
     return verify, receive

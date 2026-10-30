@@ -208,6 +208,19 @@ async def test_signed_invalid_json_is_bad_request(adapter: WhatsAppAdapter) -> N
     assert response.status == 400
 
 
+async def test_unparsable_payload_is_acknowledged_to_avoid_retries(
+    adapter: WhatsAppAdapter, graph: FakeGraphApi, caplog: pytest.LogCaptureFixture
+) -> None:
+    broken = text_message("бля")
+    broken["text"] = "строка вместо объекта"  # структура, которую Meta не присылает
+
+    with caplog.at_level(logging.ERROR):
+        assert await post_signed(adapter, webhook_payload(broken)) == 200
+
+    assert graph.calls == []
+    assert "Не удалось разобрать вебхук WhatsApp" in caplog.text
+
+
 # --- ответы ---
 
 

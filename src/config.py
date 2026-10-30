@@ -31,6 +31,9 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        # «WEBHOOK_SECRET=» из .env.example — это «не задано», а не пустой секрет:
+        # иначе вебхук MAX сверял бы заголовок с пустой строкой и отвечал 403.
+        env_ignore_empty=True,
     )
 
     # --- Общие ---
