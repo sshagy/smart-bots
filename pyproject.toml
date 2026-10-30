@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart-bots"
+version = "0.1.0"
+description = "Бот-модератор для Telegram, MAX, WhatsApp и Mattermost с единым ядром бизнес-логики"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "aiohttp>=3.11,<4",           # HTTP-сервер для вебхуков
+    "aiosqlite>=0.22,<1",         # асинхронный SQLite
+    "anthropic>=2.3,<3",          # официальный SDK Claude API (команда /check)
+    "httpx>=0.28,<1",             # HTTP-клиент для meme-api (команда /mem)
+    "pydantic>=2.10,<3",
+    "pydantic-settings>=2.7,<3",  # конфигурация из переменных окружения и .env
+]
+
+[project.optional-dependencies]
+telegram = ["aiogram>=3.31,<4"]
+max = ["maxapi-sdk>=0.13,<1"]
+whatsapp = ["kapso-whatsapp-cloud-api>=0.3,<1"]
+mattermost = ["mattermostautodriver>=11.11,<12"]
+all = ["smart-bots[telegram,max,whatsapp,mattermost]"]
+dev = [
+    "pytest>=9,<10",
+    "pytest-asyncio>=1.4,<2",
+    "pytest-mock>=3.17,<4",
+    "ruff>=0.14",
+]
+
+[project.scripts]
+smart-bots = "src.main:main"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ASYNC", "RUF"]
+# RUF001-RUF003 ругаются на кириллицу как на «похожие символы» — для русскоязычного проекта это шум.
+ignore = ["RUF001", "RUF002", "RUF003"]
