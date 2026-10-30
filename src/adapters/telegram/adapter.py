@@ -68,8 +68,8 @@ class TelegramAdapter(MessengerAdapter):
                         await self._send_text(chat_id, reply)
                     case ImageReply():
                         await self._send_image(chat_id, reply)
-            except TelegramAPIError:
-                logger.exception("Не удалось отправить ответ в Telegram-чат %s", chat_id)
+            except TelegramAPIError as exc:
+                logger.error("Не удалось отправить ответ в Telegram-чат %s: %s", chat_id, exc)
 
     async def _send_text(self, chat_id: int, reply: TextReply) -> None:
         reply_parameters = None

@@ -123,8 +123,10 @@ class MattermostAdapter(MessengerAdapter):
                         )
                     case ImageReply():
                         await self._send_image(channel_id, reply, root_id)
-            except httpx.HTTPError:  # включает ошибки API Mattermost (MattermostError)
-                logger.exception("Не удалось отправить ответ в Mattermost-канал %s", channel_id)
+            except httpx.HTTPError as exc:  # включает ошибки API Mattermost (MattermostError)
+                logger.error(
+                    "Не удалось отправить ответ в Mattermost-канал %s: %s", channel_id, exc
+                )
 
     async def _send_image(self, channel_id: str, reply: ImageReply, root_id: str | None) -> None:
         # У Mattermost нет «картинки по ссылке» в API — скачиваем и загружаем файлом.

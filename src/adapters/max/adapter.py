@@ -109,8 +109,8 @@ class MaxAdapter(MessengerAdapter):
                         await self.bot.send_message(chat_id=chat_id, text=reply.text, link=link)
                     case ImageReply():
                         await self._send_image(chat_id, reply)
-            except MaxError:
-                logger.exception("Не удалось отправить ответ в MAX-чат %s", chat_id)
+            except MaxError as exc:
+                logger.error("Не удалось отправить ответ в MAX-чат %s: %s", chat_id, exc)
 
     async def _send_image(self, chat_id: int, reply: ImageReply) -> None:
         try:

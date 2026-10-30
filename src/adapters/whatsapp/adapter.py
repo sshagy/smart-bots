@@ -84,8 +84,10 @@ class WhatsAppAdapter(MessengerAdapter):
                     await self._send_to_group(phone_number_id, message.chat_id, reply)
                 else:
                     await self._send_to_user(phone_number_id, message.chat_id, reply)
-            except (WhatsAppAPIError, ValueError):  # ValueError — валидация моделей SDK
-                logger.exception("Не удалось отправить ответ в WhatsApp-чат %s", message.chat_id)
+            except (WhatsAppAPIError, ValueError) as exc:  # ValueError — валидация моделей SDK
+                logger.error(
+                    "Не удалось отправить ответ в WhatsApp-чат %s: %s", message.chat_id, exc
+                )
 
     async def _send_to_user(self, phone_number_id: str, to: str, reply: Reply) -> None:
         match reply:

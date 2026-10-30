@@ -19,7 +19,8 @@ def new_web_app() -> web.Application:
 
 async def serve(app: web.Application, host: str, port: int) -> None:
     """Работает, пока задачу не отменят (Ctrl+C / SIGTERM)."""
-    runner = web.AppRunner(app)
+    # access_log=None: в строке запроса бывают секреты (hub.verify_token у WhatsApp).
+    runner = web.AppRunner(app, access_log=None)
     await runner.setup()
     site = web.TCPSite(runner, host, port)
     await site.start()
